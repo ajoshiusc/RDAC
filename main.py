@@ -13,11 +13,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--logdir', default='network', type=str)
 parser.add_argument('--mu', default=0.2, type=float)
 parser.add_argument('--nu', default=5.0, type=float)
-parser.add_argument('--batch_size', default=1, type=int)
+parser.add_argument('--batch_size', default=16, type=int)
 parser.add_argument('--train_sum_freq', default=150, type=int)
 parser.add_argument('--train_iter', default=150000, type=int)
 parser.add_argument('--acm_iter_limit', default=300, type=int)
-parser.add_argument('--img_resize', default=512, type=int)
+parser.add_argument('--img_resize', default=256, type=int)
 parser.add_argument('--f_size', default=15, type=int)
 parser.add_argument('--train_status', default=1, type=int)
 parser.add_argument('--narrow_band_width', default=1, type=int)
@@ -250,6 +250,8 @@ train_summary.append(tf.summary.image('Output Segmentation', y_out_dl))
 train_summary.append(tf.summary.image('Ground Truth', y))
 train_summary_op = tf.summary.merge(train_summary)
 saver = tf.train.Saver(tf.global_variables())
+config.gpu_options.allow_growth = True
+
 with tf.Session(config=config) as sess:
     if is_training:
         if restore:
@@ -265,10 +267,11 @@ with tf.Session(config=config) as sess:
             summary_writer_train = tf.summary.FileWriter(args.logdir + '/train', graph=sess.graph)
             summary_writer_valid = tf.summary.FileWriter(args.logdir + '/valid', graph=sess.graph)
             gb_step = 0
-        data_suffix = '_input.npy'
-        mask_suffix = '_label.npy'
-        data_provider_train = DataGen.ImageGen(input_location, data_suffix=data_suffix, mask_suffix=mask_suffix,shuffle_data=True, n_class=1)
-        data_provider_valid = DataGen.ImageGen(valid_location, data_suffix=data_suffix, mask_suffix=mask_suffix,shuffle_data=True, n_class=1)
+            
+        train_filename = '/home/ajoshi/projects/RDAC/dataset/Train/training_data.hdf5'  
+        valid_filename = '/home/ajoshi/projects/RDAC/dataset/Valid/valid_data.hdf5'
+        data_provider_train = DataGen.ImageGen(train_filename, shuffle_data=True, n_class=1)
+        data_provider_valid = DataGen.ImageGen(valid_filename, shuffle_data=True, n_class=1)
         try:
             for iters in range(args.train_iter):
                 print("Global step %d :" % (gb_step))

@@ -15,7 +15,7 @@ parser.add_argument('--batch_size', default=1, type=int)
 parser.add_argument('--train_sum_freq', default=150, type=int)
 parser.add_argument('--train_iter', default=150000, type=int)
 parser.add_argument('--acm_iter_limit', default=300, type=int)
-parser.add_argument('--img_resize', default=512, type=int)
+parser.add_argument('--img_resize', default=256, type=int)
 parser.add_argument('--f_size', default=15, type=int)
 parser.add_argument('--train_status', default=1, type=int)
 parser.add_argument('--narrow_band_width', default=1, type=int)
@@ -236,6 +236,8 @@ dt_trans = tf.py_func(my_func, [rounded_seg_acl], tf.float32)
 dt_trans.set_shape([args.batch_size, input_image_size, input_image_size])
 phi_out,_, lambda1_tr, lambda2_tr = tf.map_fn(fn=active_contour_layer, elems=(x_acm, dt_trans, map_lambda1[:, :, :, 0], map_lambda2[:, :, :, 0]))
 rounded_seg = tf.round(out_seg)
+config.gpu_options.allow_growth = True
+
 with tf.Session(config=config) as sess:
 
     print("########### Inference ############")
