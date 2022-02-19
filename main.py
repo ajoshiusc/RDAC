@@ -9,8 +9,10 @@ import architectures
 from sklearn.metrics import f1_score
 from utils import load_image,dice_hard,dice_soft,my_func,resolve_status
 import argparse
+import h5py
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--logdir', default='network', type=str)
+parser.add_argument('--logdir', default='./network', type=str)
 parser.add_argument('--mu', default=0.2, type=float)
 parser.add_argument('--nu', default=5.0, type=float)
 parser.add_argument('--batch_size', default=16, type=int)
@@ -19,11 +21,11 @@ parser.add_argument('--train_iter', default=150000, type=int)
 parser.add_argument('--acm_iter_limit', default=300, type=int)
 parser.add_argument('--img_resize', default=256, type=int)
 parser.add_argument('--f_size', default=15, type=int)
-parser.add_argument('--train_status', default=1, type=int)
+parser.add_argument('--train_status', default=3, type=int)
 parser.add_argument('--narrow_band_width', default=1, type=int)
 parser.add_argument('--save_freq', default=1000, type=int)
 parser.add_argument('--demo_type', default=1, type=int)
-parser.add_argument('--lr', default=1e-3, type=float)
+parser.add_argument('--lr', default=1e-4, type=float)
 parser.add_argument('--gpu', default='0', type=str)
 args = parser.parse_args()
 restore,is_training =resolve_status(args.train_status)
@@ -32,6 +34,11 @@ os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
 input_location = './dataset/Train'
 valid_location = './dataset/Valid'
 test_location = './dataset/Test'
+
+train_filename = '/home/ajoshi/projects/RDAC/dataset/Train/training_data.hdf5'  
+valid_filename = '/home/ajoshi/projects/RDAC/dataset/Valid/valid_data.hdf5'
+test_filename = '/home/ajoshi/projects/RDAC/dataset/Test/test_data.hdf5'  
+
 
 def re_init_phi(phi, dt):
     D_left_shift = tf.cast(tf.manip.roll(phi, -1, axis=1), dtype='float32')
@@ -268,8 +275,6 @@ with tf.Session(config=config) as sess:
             summary_writer_valid = tf.summary.FileWriter(args.logdir + '/valid', graph=sess.graph)
             gb_step = 0
             
-        train_filename = '/home/ajoshi/projects/RDAC/dataset/Train/training_data.hdf5'  
-        valid_filename = '/home/ajoshi/projects/RDAC/dataset/Valid/valid_data.hdf5'
         data_provider_train = DataGen.ImageGen(train_filename, shuffle_data=True, n_class=1)
         data_provider_valid = DataGen.ImageGen(valid_filename, shuffle_data=True, n_class=1)
         try:
@@ -299,23 +304,26 @@ with tf.Session(config=config) as sess:
     else:
         print("########### Inference ############")
         saver = tf.train.Saver(tf.global_variables())
-        saver.restore(sess, tf.train.latest_checkpoint(args.logdir))
-        directory = test_location
-        img_ext = '*_input.npy'
-        label_ext = 'label.npy'
+        saver.restore(sess, tf.train.latest_checkpoint(os.path.join(args.logdir, 'model.ckpt')))
         test_dice = []
         count = 0
-        for fullpath in glob.glob(os.path.join(directory, img_ext)):
+
+        #h5 = h5py.File(test_filename, 'r')
+
+        #test_images = np.float32(np.array(h5.get('X')[:,:,:,0]))/256.0
+        #test_labels = np.float32(np.array(h5.get('Y')))/256.0
+
+        data_provider_test = DataGen.ImageGen(test_filename, shuffle_data=False, n_class=1)
+        #x = tf.placeholder(shape=[1,256,256,1], dtype=tf.float32, name="x")
+        #y = tf.placeholder(dtype=tf.float32, name="y")
+        for i in range(10):
             print('Processing Case {} '.format(count+1))
             count+=1
-            filename = os.path.basename(fullpath)
-            print(filename)
-            label_name = filename.split('input')[0] + label_ext
-            label_path = fullpath.replace(filename, label_name)
-            image = load_image(fullpath,args.batch_size,False)
-            labels = load_image(label_path, args.batch_size,True)
+
+            images, labels, _ = data_provider_test(16)
+
             labels[labels != 0] = 1
-            seg_out_acm= sess.run(phi_out,{x: image, y: labels, phase: False})
+            seg_out_acm= sess.run(phi_out,{x: images, y: 0*labels, phase: False})
             seg_out_acm = seg_out_acm[0, :, :]
             gt_mask = labels[0, :, :, 0]
             f2 = f1_score(gt_mask, seg_out_acm, labels=None, average='micro', sample_weight=None)
