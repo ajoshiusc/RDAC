@@ -390,7 +390,7 @@ with tf.Session(config=config) as sess:
 
             else:
                 images = np.zeros(x.shape)
-                labels = np.zeros(y.shape)
+                labels = np.zeros(x.shape)
                 images[:num_test_imgs - st_pt] = test_images[st_pt:num_test_imgs]
                 labels[:num_test_imgs - st_pt] = test_labels[st_pt:num_test_imgs]
 
@@ -411,8 +411,8 @@ with tf.Session(config=config) as sess:
             else:
                 out_labels[st_pt:num_test_imgs] = seg_out_acm[:num_test_imgs - st_pt]
 
-            gt_mask = labels[0, :, :, 0]
-            f2 = f1_score(gt_mask, seg_out_acm[0, :, :], labels=None,
+            #gt_mask = labels[:, :, :, 0]
+            f2 = f1_score(labels.flatten(), seg_out_acm.flatten(), labels=None,
                           average='micro', sample_weight=None)
             print('Dice is {0:0.4f}'.format(f2))
             test_dice.append(f2)
