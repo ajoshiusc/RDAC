@@ -38,7 +38,7 @@ test_location = './dataset/Test'
 train_filename = '/home/ajoshi/projects/RDAC/dataset/Train/training_data.hdf5'
 valid_filename = '/home/ajoshi/projects/RDAC/dataset/Valid/valid_data.hdf5'
 test_filename = '/home/ajoshi/projects/RDAC/dataset/Test/test_data.hdf5'
-
+test_output_filename = '/home/ajoshi/projects/RDAC/dataset/Test/test_data_output_labels.hdf5'
 
 def re_init_phi(phi, dt):
     D_left_shift = tf.cast(tf.manip.roll(phi, -1, axis=1), dtype='float32')
@@ -420,3 +420,8 @@ with tf.Session(config=config) as sess:
             st_pt += args.batch_size
 
         print("Avg Test Dice Score : {0:0.4f}".format(np.average(test_dice)))
+        hf = h5py.File(test_output_filename, 'w')
+        hf.create_dataset('out_labels', data=out_labels)
+        hf.close()
+
+

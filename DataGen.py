@@ -106,6 +106,8 @@ class ImageGen(BaseDataProvider):
         self.images = np.float32(np.array(h5.get('X')[:,:,:,0]))/256.0
         self.labels = np.float32(np.array(h5.get('Y')))/256.0
 
+        h5.close()
+
         self.data_ids = np.array(range(self.images.shape[0]))
         if self.shuffle_data:
             np.random.shuffle(self.data_ids)
